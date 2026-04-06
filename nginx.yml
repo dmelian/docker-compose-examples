@@ -1,0 +1,8 @@
+services:
+  nginx:
+    image: nginx:latest
+    ports: 
+      - 8081:80
+    volumes:
+      - ./public-html:/usr/share/nginx/html:ro
+  
