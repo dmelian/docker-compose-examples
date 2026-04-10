@@ -1,0 +1,83 @@
+version: "3.9"
+
+# =============================================================
+#  Ghost + MySQL  — Blog y publicación profesional
+#  Ejemplo para FP / Docker — Sesión 2: Multi-contenedor
+# =============================================================
+#
+#  INICIO RÁPIDO:
+#    docker compose up -d
+#    Abrir navegador: http://localhost:2368
+#
+#  PANEL DE ADMINISTRACIÓN:
+#    http://localhost:2368/ghost
+#
+#  PARAR:
+#    docker compose down
+#
+#  PARAR Y BORRAR DATOS:
+#    docker compose down -v
+# =============================================================
+
+services:
+
+  # ── 1. Base de datos ────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: ghost_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: ghost
+      MYSQL_USER: ghost
+      MYSQL_PASSWORD: ghost_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ghost_net
+
+  # ── 2. Ghost ─────────────────────────────────────────────────
+  ghost:
+    image: ghost:5-alpine
+    container_name: ghost_app
+    restart: unless-stopped
+    depends_on:
+      - mysql                           # arranca mysql antes que ghost
+    ports:
+      - "2368:2368"                     # http://localhost:2368
+    environment:
+      # URL pública (cambiar por IP del aula si se comparte)
+      url: "http://localhost:2368"
+
+      # Conexión a MySQL
+      database__client: mysql
+      database__connection__host: mysql  # nombre del servicio, no localhost
+      database__connection__port: 3306
+      database__connection__database: ghost
+      database__connection__user: ghost
+      database__connection__password: ghost_pass
+
+      # Modo desarrollo — más logs, sin caché
+      NODE_ENV: development
+
+    volumes:
+      - ghost_content:/var/lib/ghost/content   # temas, imágenes, posts
+    networks:
+      - ghost_net
+
+# =============================================================
+#  VOLÚMENES
+# =============================================================
+volumes:
+  mysql_data:
+    name: ghost_mysql_data
+  ghost_content:
+    name: ghost_content
+
+# =============================================================
+#  RED
+# =============================================================
+networks:
+  ghost_net:
+    name: ghost_net
+    driver: bridge

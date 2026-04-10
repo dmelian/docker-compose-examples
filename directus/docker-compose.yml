@@ -1,0 +1,93 @@
+version: "3.9"
+
+# =============================================================
+#  Directus + PostgreSQL  — CMS Headless y gestor de datos
+#  Ejemplo para FP / Docker — Sesión 2: Multi-contenedor
+# =============================================================
+#
+#  INICIO RÁPIDO:
+#    docker compose up -d
+#    Abrir navegador: http://localhost:8055
+#
+#  CREDENCIALES POR DEFECTO:
+#    Email:      admin@clase.com
+#    Contraseña: admin1234
+#
+#  PARAR:
+#    docker compose down
+#
+#  PARAR Y BORRAR DATOS:
+#    docker compose down -v
+# =============================================================
+
+services:
+
+  # ── 1. Base de datos ────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: directus_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: directus
+      POSTGRES_USER: directus
+      POSTGRES_PASSWORD: directus_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - directus_net
+
+  # ── 2. Directus ─────────────────────────────────────────────
+  directus:
+    image: directus/directus:latest
+    container_name: directus_app
+    restart: unless-stopped
+    depends_on:
+      - postgres                        # arranca postgres antes que directus
+    ports:
+      - "8055:8055"                     # http://localhost:8055
+    environment:
+      # Clave secreta para cifrar tokens — cambiar en producción
+      SECRET: "clave-secreta-para-clase-docker"
+
+      # Conexión a PostgreSQL
+      DB_CLIENT: pg
+      DB_HOST: postgres                 # nombre del servicio, no localhost
+      DB_PORT: 5432
+      DB_DATABASE: directus
+      DB_USER: directus
+      DB_PASSWORD: directus_pass
+
+      # Usuario administrador inicial
+      ADMIN_EMAIL: "admin@clase.com"
+      ADMIN_PASSWORD: "admin1234"
+
+      # URL pública (cambiar por IP del aula si se comparte)
+      PUBLIC_URL: "http://localhost:8055"
+
+      # Deshabilitar telemetría
+      TELEMETRY: "false"
+
+    volumes:
+      - directus_uploads:/directus/uploads    # ficheros subidos
+      - directus_extensions:/directus/extensions  # plugins
+    networks:
+      - directus_net
+
+# =============================================================
+#  VOLÚMENES
+# =============================================================
+volumes:
+  postgres_data:
+    name: directus_postgres_data
+  directus_uploads:
+    name: directus_uploads
+  directus_extensions:
+    name: directus_extensions
+
+# =============================================================
+#  RED
+# =============================================================
+networks:
+  directus_net:
+    name: directus_net
+    driver: bridge

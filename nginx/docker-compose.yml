@@ -1,0 +1,63 @@
+version: "3.9"
+
+# =============================================================
+#  Nginx  — Servidor web con contenido estático
+#  Ejemplo para FP / Docker — Sesión: Volúmenes bind mount
+# =============================================================
+#
+#  ESTRUCTURA DE CARPETAS (crear antes de arrancar):
+#
+#  proyecto-nginx/
+#  ├── docker-compose.yml        ← este fichero
+#  └── www/
+#      ├── 2048/                 ← git clone https://github.com/gabrielecirulli/2048
+#      ├── mi-web/               ← git clone https://github.com/alumno/su-web
+#      └── index.html            ← página de inicio opcional
+#
+#  INICIO RÁPIDO:
+#    1. Crear carpeta www:
+#       mkdir www
+#    2. Clonar el juego:
+#       git clone https://github.com/gabrielecirulli/2048 www/2048
+#    3. Clonar tu web:
+#       git clone https://github.com/alumno/su-web www/mi-web
+#    4. Arrancar nginx:
+#       docker compose up -d
+#    5. Abrir navegador:
+#       http://localhost:8080/2048/
+#       http://localhost:8080/mi-web/
+#
+#  PARAR:
+#    docker compose down
+#  (los ficheros de www/ no se borran — están en el host)
+# =============================================================
+
+services:
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_web
+    restart: unless-stopped
+    ports:
+      - "8080:80"                 # http://localhost:8080
+    volumes:
+      # Bind mount: carpeta local www/ → raíz del servidor web
+      # Cualquier cambio en www/ se ve AL INSTANTE en el navegador
+      # sin reiniciar el contenedor
+      - ./www:/usr/share/nginx/html:ro   # ro = solo lectura (read only)
+
+    networks:
+      - nginx_net
+
+# =============================================================
+#  RED
+# =============================================================
+networks:
+  nginx_net:
+    name: nginx_net
+    driver: bridge
+
+# =============================================================
+#  NOTA: No hay sección volumes: porque usamos bind mount
+#  (carpeta del host directamente) en lugar de volumen Docker
+# =============================================================

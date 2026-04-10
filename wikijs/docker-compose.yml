@@ -1,0 +1,69 @@
+version: "3.9"
+
+# =============================================================
+#  Wiki.js + PostgreSQL  — Wiki moderna y colaborativa
+#  Ejemplo para FP / Docker — Sesión 2: Multi-contenedor
+# =============================================================
+#
+#  INICIO RÁPIDO:
+#    docker compose up -d
+#    Abrir navegador: http://localhost:3000
+#
+#  PARAR:
+#    docker compose down
+#
+#  PARAR Y BORRAR DATOS:
+#    docker compose down -v
+# =============================================================
+
+services:
+
+  # ── 1. Base de datos ────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine          # alpine = imagen ligera
+    container_name: wikijs_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: wikijs
+      POSTGRES_USER: wikijs
+      POSTGRES_PASSWORD: wikijs_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wikijs_net
+
+  # ── 2. Wiki.js ──────────────────────────────────────────────
+  wikijs:
+    image: ghcr.io/requarks/wiki:2     # versión estable 2.x
+    container_name: wikijs_app
+    restart: unless-stopped
+    depends_on:
+      - postgres                       # arranca postgres antes que wikijs
+    ports:
+      - "3000:3000"                    # http://localhost:3000
+    environment:
+      # Conexión a PostgreSQL
+      DB_TYPE: postgres
+      DB_HOST: postgres                # nombre del servicio, no localhost
+      DB_PORT: 5432
+      DB_USER: wikijs
+      DB_PASS: wikijs_pass
+      DB_NAME: wikijs
+
+    networks:
+      - wikijs_net
+
+# =============================================================
+#  VOLÚMENES
+# =============================================================
+volumes:
+  postgres_data:
+    name: wikijs_postgres_data
+
+# =============================================================
+#  RED
+# =============================================================
+networks:
+  wikijs_net:
+    name: wikijs_net
+    driver: bridge
